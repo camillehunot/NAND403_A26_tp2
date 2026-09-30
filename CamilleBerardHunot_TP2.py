@@ -68,13 +68,39 @@ class OutlinerOrganization(QWidget): #definition de la classe
 
 
 
-
 # definit ce qui se passe quand on clic sur le bouton
     def on_click(self):
        
         self.read_json() #execute la fonction read_json 
         checkbox_states = self.get_checkbox_states() #récupère l'état des checkboxes et le met dans la variable checkbox_states
 
+        if checkbox_states["selection"]:
+            item_selected= cmds.ls(selection=True) 
+            
+            if not item_selected: #si aucun item n'est selectionné, on affiche un message d'erreur
+                QMessageBox.warning(self, "Warning", "Nothing selected in the outliner")
+                return 
+
+
+          
+
+        if checkbox_states["color"]:
+            QMessageBox.information(self, "Verification", "Apply on color only")
+
+        if checkbox_states["reorder"]:
+
+            if item_selected:
+                for item in item_selected:
+                    cmds.select(item, replace=True) #permet de selectionner l'item dans l'outliner
+                    cmds.outlinerEditor("outlinerPanel1", edit=True, sortOrder="dagName") 
+
+            if cmds.outlinerEditor("outlinerPanel1", exists=True):
+                cmds.outlinerEditor("outlinerPanel1", edit=True, sortOrder="dagName") 
+               # cmds.outlinerEditor("outlinerPanel1", edit=True, sortOrder="none")#permet de redonner le pouvoir a l'utilisateur de trier manuellement
+
+        
+
+            
 #pseudo code pour l'organisation de l'outliner en fonction des règles du fichier json et des états des checkboxes
         #if checkbox_states["selection"]:
         #    #    # Appliquer les règles sur la sélection uniquement
@@ -83,7 +109,7 @@ class OutlinerOrganization(QWidget): #definition de la classe
         #if checkbox_states["reorder"]:
         #    #    # Appliquer les règles de réorganisation uniquement
 
-        
+
 
     
 
