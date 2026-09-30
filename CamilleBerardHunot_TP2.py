@@ -104,9 +104,8 @@ class OutlinerOrganization(QWidget): #definition de la classe
         else: #ici on prend tous les objets car l'option only selection n'est pas cochée
 
                 item_selected = cmds.ls(type="transform") #si la case n'Est pas cochée, on récupère tous les objets de la scène
-
-    
-      
+        # avant (assemblies=True) mais cela posait problème pour vérifier les préfixes dans le JSON,
+        # changé pour type="transform" pour inclure tous les objets transformables.
 
 
         #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> color <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
