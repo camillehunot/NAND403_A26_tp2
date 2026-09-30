@@ -4,11 +4,10 @@ import maya.cmds as cmds #permet de gérer les commandes de maya, on peut faire 
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout,QTextEdit, QPushButton, QMessageBox, QApplication, QCheckBox, QLineEdit
 
 
-
 class OutlinerOrganization(QWidget): #definition de la classe
     def __init__(self): #constructeur self équivalent de this du cpp, le constructeur dans python prend self en paramètre
         super().__init__() # Constructeur de notre parent (super = mot clé générique pour l'héritage)
-        self.setWindowTitle("Outliner Organization")   #fonction qui existe déjà dans QWidget self(en gros la class messageBoard) appel la fonction setWindoTitle
+        self.setWindowTitle("Magic Outliner Organization")   #fonction qui existe déjà dans QWidget self(en gros la class messageBoard) appel la fonction setWindoTitle
         self.create_ui()#pas besoin de mettre self ici. permet d'appeler create UI
 
 
@@ -44,6 +43,8 @@ class OutlinerOrganization(QWidget): #definition de la classe
             "reorder": self.check_box_reorder.isChecked()
         }   
 
+
+#ici on va lire le JSON et le mettre en mémoire pour plus tard
     def read_json(self):
 
         json_path = self.texte.text().strip() #.text() permet de récupérer le texte du QLineEdit sans les balises html
@@ -83,12 +84,9 @@ class OutlinerOrganization(QWidget): #definition de la classe
         checkbox_states = self.get_checkbox_states() #récupère l'état des checkboxes et le met dans la variable checkbox_states
         item_selected = [] #initialise une liste vide pour stocker les objets sélectionnés ou tous les objets de la scène
 
-       
-
-
 
         #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> selection <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
+        # Ici on va en gros mettre les objets de l'outlier dans une liste pour pouvoir les manipuler plus tard, prend les objets selectionnés ou prend tous les objets
 
         if checkbox_states["selection"]:
             item_selected= cmds.ls(selection=True) #permet de récupérer les objets selectionnés dans maya et de les mettre dans la variable item_selected
@@ -98,7 +96,7 @@ class OutlinerOrganization(QWidget): #definition de la classe
             if not item_selected: #si aucun item n'est selectionné, on affiche un message d'erreur
                 QMessageBox.warning(self, "Warning", "Nothing selected in the outliner")
                 return 
-        else:
+        else: #ici on prend tous les objets car l'option only selection n'est pas cochée
 
                 item_selected = cmds.ls(assemblies=True) #si la case n'Est pas cochée, on récupère tous les objets de la scène
 
@@ -111,9 +109,10 @@ class OutlinerOrganization(QWidget): #definition de la classe
 
         if checkbox_states["color"]:
             
-            for obj in item_selected:
-                for prefix, color in self.rules.items():
-                    if obj.startswith(prefix):
+            for obj in item_selected: #pour chaque objet dans la liste des items sélectionnés
+
+                for prefix, color in self.rules.items(): #pour chaque préfixe et couleur dans le dictionnaire du JSON
+                    if obj.startswith(prefix): #si le nom de l'objet commence par le préfixe du JSON, on applique la couleur 
                         try:
                             
                             cmds.setAttr(f"{obj}.useOutlinerColor", True) #permet d'activer la couleur dans l'outliner
@@ -121,52 +120,32 @@ class OutlinerOrganization(QWidget): #definition de la classe
 
                             cmds.setAttr(f"{obj}.outlinerColor", color[0], color[1], color[2], type="double3") #permet de changer la couleur de l'objet dans l'outliner
                         
-                        except Exception as e: #si l'application échoue
-                            QMessageBox.warning(self, "Warning", f"Impossible de changer la couleur de {obj} : {e}")
-
-
-            
+                        except Exception as e: #si l'application échoue , protège le code et affiche une erreur
+                            QMessageBox.warning(self, "Warning", f"Can't changecolor... sorry")
+ 
             cmds.refresh(force=True)   #obligatoire pour que les couleurs s'appliquent immédiatement dans l'outliner
 
 
 
-#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> reorder <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> reorder <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
         if checkbox_states["reorder"]:
-            print("Apply reorder")
 
-            # 1. On trie la liste par ordre alphabétique (sans l'influence des majuscules)
+            # trie  par ordre alphabétique (key=str.lower, ignore la casse)
             item_selected = sorted(item_selected, key=str.lower)
             
-            
-            # 3. On applique le tri visuel dans l'Outliner de Maya
-            for node in item_selected:
+            # applique le tri dans l'outliner
+            for item in item_selected:
                 try:
-                    cmds.reorder(node, back=True)
+                    cmds.reorder(item, back=True)
                 except Exception as e:
-                    print(f"Impossible de réorganiser {node} : {e}")
-            
-     
-
-
-
-          
-
-        
-
-
-
-    
-
-        
-
+                    print(f"Impossible de réorganiser {item} : {e}")
 
  
 def main(): #definition fonction main
     global widget #global permet que la variable widget est accessible partout, permet de garder la variable pour plus tard
     
-
     try: #permet de pas les accumuler plus d'une fois
         widget.close()
     except Exception:
@@ -177,5 +156,3 @@ def main(): #definition fonction main
     widget.show()
  
 main() #call la fonction main
-
- 
