@@ -25,7 +25,7 @@ class OutlinerOrganization(QWidget): #definition de la classe
         layout.addWidget(self.texte) #ajouter le QLineEdit dans le layout
  
         self.check_box_selection = QCheckBox("Apply on selection only", self)
-        self.check_box_color = QCheckBox("Apply on color only", self)
+        self.check_box_color = QCheckBox("Apply color", self)
         self.check_box_reorder = QCheckBox("Apply reorder", self)
 
         #ici on ajoute les checkboxes dans le layout
@@ -52,18 +52,20 @@ class OutlinerOrganization(QWidget): #definition de la classe
             QMessageBox.warning(self, "Warning", "No json file path provided") #self = la class, titre de la boite, message
             self.texte.setStyleSheet("background-color: #ffd9d9; color: #155724;") 
             #permet de changer la couleur de fond et du texte de la zone de texte pour indiquer que le chemin est vide
-            return
+            return False  #permet de sortir de la fonction si le chemin est vide
 
         #>>>>>>>> permet de load le .json en toute sécurité
         try: 
-            rules = json.load(open(json_path)) #ouvre le fichier json et le met dans une variable rules 
+            self.rules = json.load(open(json_path)) #ouvre le fichier json et le met dans une variable rules 
             self.texte.setStyleSheet("background-color: #D4EDDA; color: #155724;")
             #permet de confirmer que le fichier json a été chargé en changeant la couleur de la zone de texte
+            return True  #permet de sortir de la fonction si le chemin est valide
         except:
             print(f"Could not load JSON file: {json_path}")
             self.texte.setStyleSheet("background-color: #ffd9d9; color: #155724;") #I love CSS
             QMessageBox.warning(self, "Warning", "Could not load JSON file from path: \n" + json_path + "\n Please check the file path and try again") #self = la class, titre de la boite, message
             #permet d'indiquer que le chemin n'est pas utilisable
+            return False  #permet de sortir de la fonction si le chemin est invalide
             
 
 
@@ -72,42 +74,86 @@ class OutlinerOrganization(QWidget): #definition de la classe
     def on_click(self):
        
         self.read_json() #execute la fonction read_json 
+
+        if not self.read_json(): 
+            return # Si read_json a renvoyé False, on arrête tout ici
+
+
+        prefix_colors = self.read_json() #assigner le résultat de read_json à la variable prefix_colors
         checkbox_states = self.get_checkbox_states() #récupère l'état des checkboxes et le met dans la variable checkbox_states
+        item_selected = [] #initialise une liste vide pour stocker les objets sélectionnés ou tous les objets de la scène
+
+       
+
+
+
+        #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> selection <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 
         if checkbox_states["selection"]:
-            item_selected= cmds.ls(selection=True) 
+            item_selected= cmds.ls(selection=True) #permet de récupérer les objets selectionnés dans maya et de les mettre dans la variable item_selected
+        
+
             
             if not item_selected: #si aucun item n'est selectionné, on affiche un message d'erreur
                 QMessageBox.warning(self, "Warning", "Nothing selected in the outliner")
                 return 
+        else:
+
+                item_selected = cmds.ls(assemblies=True) #si la case n'Est pas cochée, on récupère tous les objets de la scène
+
+                # sur les forums cela explique si nos objets sont dans des groupes il faudrait utiliser cmds.ls(type="transform") pas certaine de comprendre
+      
+
+
+        #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> color <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+        if checkbox_states["color"]:
+            
+            for obj in item_selected:
+                for prefix, color in self.rules.items():
+                    if obj.startswith(prefix):
+                        try:
+                            
+                            cmds.setAttr(f"{obj}.useOutlinerColor", True) #permet d'activer la couleur dans l'outliner
+
+
+                            cmds.setAttr(f"{obj}.outlinerColor", color[0], color[1], color[2], type="double3") #permet de changer la couleur de l'objet dans l'outliner
+                        
+                        except Exception as e: #si l'application échoue
+                            QMessageBox.warning(self, "Warning", f"Impossible de changer la couleur de {obj} : {e}")
+
+
+            
+            cmds.refresh(force=True)   #obligatoire pour que les couleurs s'appliquent immédiatement dans l'outliner
+
+
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> reorder <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+        if checkbox_states["reorder"]:
+            print("Apply reorder")
+
+            # 1. On trie la liste par ordre alphabétique (sans l'influence des majuscules)
+            item_selected = sorted(item_selected, key=str.lower)
+            
+            
+            # 3. On applique le tri visuel dans l'Outliner de Maya
+            for node in item_selected:
+                try:
+                    cmds.reorder(node, back=True)
+                except Exception as e:
+                    print(f"Impossible de réorganiser {node} : {e}")
+            
+     
+
 
 
           
 
-        if checkbox_states["color"]:
-            QMessageBox.information(self, "Verification", "Apply on color only")
-
-        if checkbox_states["reorder"]:
-
-            if item_selected:
-                for item in item_selected:
-                    cmds.select(item, replace=True) #permet de selectionner l'item dans l'outliner
-                    cmds.outlinerEditor("outlinerPanel1", edit=True, sortOrder="dagName") 
-
-            if cmds.outlinerEditor("outlinerPanel1", exists=True):
-                cmds.outlinerEditor("outlinerPanel1", edit=True, sortOrder="dagName") 
-               # cmds.outlinerEditor("outlinerPanel1", edit=True, sortOrder="none")#permet de redonner le pouvoir a l'utilisateur de trier manuellement
-
         
-
-            
-#pseudo code pour l'organisation de l'outliner en fonction des règles du fichier json et des états des checkboxes
-        #if checkbox_states["selection"]:
-        #    #    # Appliquer les règles sur la sélection uniquement
-        #if checkbox_states["color"]:
-        #    #    # Appliquer les règles sur la couleur uniquement
-        #if checkbox_states["reorder"]:
-        #    #    # Appliquer les règles de réorganisation uniquement
 
 
 
