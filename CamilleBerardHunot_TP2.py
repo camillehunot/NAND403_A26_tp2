@@ -8,21 +8,24 @@ class OutlinerOrganization(QWidget): #definition de la classe
     def __init__(self): #constructeur self équivalent de this du cpp, le constructeur dans python prend self en paramètre
         super().__init__() # Constructeur de notre parent (super = mot clé générique pour l'héritage)
         self.setWindowTitle("Magic Outliner Organization")   #fonction qui existe déjà dans QWidget self(en gros la class messageBoard) appel la fonction setWindoTitle
-        self.create_ui()#pas besoin de mettre self ici. permet d'appeler create UI
+        self.create_ui()#pas besoin de mettre self ici. permet d'appeler notre fonction create UI
 
 
-    #definir une fonction
+  #>>>>>>definir la fonction qui crée notre interface
     def create_ui(self): #premier parametre toujours self dans les class
-        print("create ui")
-        app = QApplication.instance() #permet de récupérer l'instance de l'application
+        
+        app = QApplication.instance() #permet de récupérer l'instance de l'application, toujours avant un QWidget 
        
         layout = QVBoxLayout(self)   #container
-        title = QLabel("enter JSON rule path")
-        layout.addWidget(title) #permet de ranger le title dans le layout
+
+    # >>> Création de l'instruction et de la zone de prise de texte
+        text_instruction = QLabel("enter JSON rule path")
+        layout.addWidget(text_instruction) #permet de ranger le text_instruction dans le layout
 
         self.texte = QLineEdit(self) #zone ou on va pouvoir écrire le chemin du fichier .json
         layout.addWidget(self.texte) #ajouter le QLineEdit dans le layout
- 
+
+    # >>> Création des checkboxes pour les options
         self.check_box_selection = QCheckBox("Apply on selection only", self)
         self.check_box_color = QCheckBox("Apply color", self)
         self.check_box_reorder = QCheckBox("Apply reorder", self)
@@ -32,10 +35,14 @@ class OutlinerOrganization(QWidget): #definition de la classe
         layout.addWidget(self.check_box_color)
         layout.addWidget(self.check_box_reorder)
 
+    # >>> Création du bouton et sa connexion à  on_click (pour plus tard, sinon rien ne se passe)
         button = QPushButton("Organize Outliner", self) #ajouter un string pour ajouter du texte sur notre bouton
         layout.addWidget(button)
         button.clicked.connect(self.on_click) #permet de connecter le bouton a un évenement, ici c'est activer la fonction on_click
 
+
+
+  #>>>>>>definir la fonction qui vérifier si les options sont cochées ou pas et return des valeurs true false
     def get_checkbox_states(self): #permet de récupérer l'état des checkboxes avec un true ou false
         return {
             "selection": self.check_box_selection.isChecked(),
@@ -80,27 +87,25 @@ class OutlinerOrganization(QWidget): #definition de la classe
             return # Si read_json a renvoyé False, on arrête tout ici
 
 
-        prefix_colors = self.read_json() #assigner le résultat de read_json à la variable prefix_colors
+        prefix_colors = self.read_json() #met dans la variable le résultat de reand_json
         checkbox_states = self.get_checkbox_states() #récupère l'état des checkboxes et le met dans la variable checkbox_states
-        item_selected = [] #initialise une liste vide pour stocker les objets sélectionnés ou tous les objets de la scène
+        item_selected = [] #crée une liste vide pour stocker les objets sélectionnés ou tous les objets de la scène
 
 
         #>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> selection <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         # Ici on va en gros mettre les objets de l'outlier dans une liste pour pouvoir les manipuler plus tard, prend les objets selectionnés ou prend tous les objets
 
-        if checkbox_states["selection"]:
+        if checkbox_states["selection"]: #entre crochet on met le nom de la checkbox 
             item_selected= cmds.ls(selection=True) #permet de récupérer les objets selectionnés dans maya et de les mettre dans la variable item_selected
-        
-
             
             if not item_selected: #si aucun item n'est selectionné, on affiche un message d'erreur
                 QMessageBox.warning(self, "Warning", "Nothing selected in the outliner")
                 return 
         else: #ici on prend tous les objets car l'option only selection n'est pas cochée
 
-                item_selected = cmds.ls(assemblies=True) #si la case n'Est pas cochée, on récupère tous les objets de la scène
+                item_selected = cmds.ls(type="transform") #si la case n'Est pas cochée, on récupère tous les objets de la scène
 
-                # sur les forums cela explique si nos objets sont dans des groupes il faudrait utiliser cmds.ls(type="transform") pas certaine de comprendre
+    
       
 
 
@@ -109,16 +114,16 @@ class OutlinerOrganization(QWidget): #definition de la classe
 
         if checkbox_states["color"]:
             
-            for obj in item_selected: #pour chaque objet dans la liste des items sélectionnés
+            for item in item_selected: #pour chaqueitem dans la liste des items sélectionnés
 
                 for prefix, color in self.rules.items(): #pour chaque préfixe et couleur dans le dictionnaire du JSON
-                    if obj.startswith(prefix): #si le nom de l'objet commence par le préfixe du JSON, on applique la couleur 
+                    if item.startswith(prefix): #si le nom de l'objet commence par le préfixe du JSON, on applique la couleur 
                         try:
                             
-                            cmds.setAttr(f"{obj}.useOutlinerColor", True) #permet d'activer la couleur dans l'outliner
+                            cmds.setAttr(f"{item}.useOutlinerColor", True) #permet d'activer la couleur dans l'outliner
 
 
-                            cmds.setAttr(f"{obj}.outlinerColor", color[0], color[1], color[2], type="double3") #permet de changer la couleur de l'objet dans l'outliner
+                            cmds.setAttr(f"{item}.outlinerColor", color[0], color[1], color[2], type="double3") #permet de changer la couleur de l'objet dans l'outliner
                         
                         except Exception as e: #si l'application échoue , protège le code et affiche une erreur
                             QMessageBox.warning(self, "Warning", f"Can't changecolor... sorry")
