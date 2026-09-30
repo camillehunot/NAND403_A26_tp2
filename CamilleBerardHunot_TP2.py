@@ -1,5 +1,6 @@
 import sys
 import json
+import maya.cmds as cmds #permet de gérer les commandes de maya, on peut faire des commandes comme cmds.ls() pour lister les objets selectionnésb 
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout,QTextEdit, QPushButton, QMessageBox, QApplication, QCheckBox, QLineEdit
 
 
@@ -41,8 +42,7 @@ class OutlinerOrganization(QWidget): #definition de la classe
             "selection": self.check_box_selection.isChecked(),
             "color": self.check_box_color.isChecked(),
             "reorder": self.check_box_reorder.isChecked()
-        }
-    
+        }   
 
     def read_json(self):
 
@@ -69,13 +69,21 @@ class OutlinerOrganization(QWidget): #definition de la classe
 
 
 
-
+# definit ce qui se passe quand on clic sur le bouton
     def on_click(self):
        
         self.read_json() #execute la fonction read_json 
         checkbox_states = self.get_checkbox_states() #récupère l'état des checkboxes et le met dans la variable checkbox_states
 
+#pseudo code pour l'organisation de l'outliner en fonction des règles du fichier json et des états des checkboxes
+        #if checkbox_states["selection"]:
+        #    #    # Appliquer les règles sur la sélection uniquement
+        #if checkbox_states["color"]:
+        #    #    # Appliquer les règles sur la couleur uniquement
+        #if checkbox_states["reorder"]:
+        #    #    # Appliquer les règles de réorganisation uniquement
 
+        
 
     
 
