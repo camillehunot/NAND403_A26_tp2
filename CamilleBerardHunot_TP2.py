@@ -160,3 +160,4 @@ def main(): #definition fonction main
     widget.show()
  
 main() #call la fonction main
+#correction
